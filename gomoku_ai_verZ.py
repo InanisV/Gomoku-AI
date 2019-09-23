@@ -4,11 +4,10 @@ COLOR_BLACK = -1
 COLOR_WHITE = 1
 COLOR_NONE = 0
 
-THINK_DEPTH = 2
+THINK_DEPTH = 3
 THINK_BREADTH_MIN = 4
-THINK_BREADTH_MAX = 7
+THINK_BREADTH_MAX = 10
 PLAYER_RADIO = 0.7
-ATTACK = False
 
 weights = {"11111": 500000, "011110": 43200, "011100": 720, "001110": 720, "011010": 720, "010110": 720,
            "11110": 720, "01111": 720, "11011": 720, "10111": 720, "11101": 720, "001100": 120,
@@ -31,14 +30,6 @@ def evaluate_line(line):
     return score
 
 
-def evaluate_trace(trace):
-    value, i = 0, 1 if ATTACK else -1
-    for dot in trace:
-        value += i * dot[0]
-        i *= -1
-    return value
-
-
 def symbol(chessboard_color, my_color):
     if chessboard_color == COLOR_NONE:
         return '0'
@@ -54,6 +45,7 @@ class AI(object):
         self.color = color
         self.time_out = time_out
         self.candidate_list = []
+        self.ATTACK = True if color == -1 else 1
 
     def go(self, chessboard):
         self.candidate_list.clear()
@@ -117,6 +109,13 @@ class AI(object):
                 line += symbol(tmp_color, color)
         return evaluate_line(line)
 
+    def evaluate_trace(self, trace):
+        value, i = 0, 1 if self.ATTACK else -1
+        for dot in trace:
+            value += i * dot[0]
+            i *= -1
+        return value
+
     def evaluate_chessboard(self, chessboard):
         dot_list = self.get_dot_list(chessboard, self.color)
         if dot_list[0][0] >= 1440:
@@ -132,7 +131,7 @@ class AI(object):
 
     def minmax(self, chessboard, depth, is_max_player, alpha, beta, trace):
         if depth == 0:
-            return evaluate_trace(trace)
+            return self.evaluate_trace(trace)
         best_val = -1e15 if is_max_player else 1e15
         color = self.color if is_max_player else -self.color
         dot_list = self.get_dot_list(chessboard, color)
