@@ -7,7 +7,8 @@ COLOR_NONE = 0
 THINK_DEPTH = 3
 THINK_BREADTH_MIN = 4
 THINK_BREADTH_MAX = 10
-PLAYER_RADIO = 0.7
+ATTACK_RATIO = 0.6
+DEFENCE_RATIO = 0.7
 
 weights = {"11111": 500000, "011110": 43200, "011100": 720, "001110": 720, "011010": 720, "010110": 720,
            "11110": 720, "01111": 720, "11011": 720, "10111": 720, "11101": 720, "001100": 120,
@@ -46,6 +47,7 @@ class AI(object):
         self.time_out = time_out
         self.candidate_list = []
         self.ATTACK = True if color == -1 else 1
+        self.PLAYER_RATIO = ATTACK_RATIO if self.ATTACK else DEFENCE_RATIO
 
     def go(self, chessboard):
         self.candidate_list.clear()
@@ -63,7 +65,7 @@ class AI(object):
             for j in range(self.chessboard_size):
                 if chessboard[i][j] != COLOR_NONE:
                     continue
-                tmp = self.evaluate_dot(i, j, chessboard, color) + PLAYER_RADIO * self.evaluate_dot(i, j, chessboard, -color)
+                tmp = self.evaluate_dot(i, j, chessboard, color) + self.PLAYER_RATIO * self.evaluate_dot(i, j, chessboard, -color)
                 dot_list.append((tmp, i, j))
         dot_list.sort(reverse=True)
         return dot_list[0: min(random.randint(THINK_BREADTH_MIN, THINK_BREADTH_MAX), len(dot_list))]
