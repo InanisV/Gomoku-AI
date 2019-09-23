@@ -5,8 +5,9 @@ COLOR_WHITE = 1
 COLOR_NONE = 0
 
 THINK_DEPTH = 2
-THINK_BREADTH = 7
-PLAYER_RADIO = 0.6
+THINK_BREADTH_MIN = 4
+THINK_BREADTH_MAX = 5
+PLAYER_RADIO = 0.7
 ATTACK = False
 
 weights = {"11111": 500000, "011110": 43200, "011100": 720, "001110": 720, "011010": 720, "010110": 720,
@@ -73,7 +74,7 @@ class AI(object):
                 tmp = self.evaluate_dot(i, j, chessboard, color) + PLAYER_RADIO * self.evaluate_dot(i, j, chessboard, -color)
                 dot_list.append((tmp, i, j))
         dot_list.sort(reverse=True)
-        return dot_list[0: min(random.randint(2, THINK_BREADTH), len(dot_list))]
+        return dot_list[0: min(random.randint(THINK_BREADTH_MIN, THINK_BREADTH_MAX), len(dot_list))]
 
     def evaluate_dot(self, x, y, chessboard, color):
         chessboard[x][y] = color
