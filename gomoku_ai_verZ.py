@@ -4,7 +4,10 @@ COLOR_BLACK = -1
 COLOR_WHITE = 1
 COLOR_NONE = 0
 
+THINK_DEPTH = 2
+THINK_BREADTH = 4
 PLAYER_RADIO = 0.7
+ATTACK = False
 
 weights = {"11111": 50000, "011110": 4320, "011100": 720, "001110": 720, "011010": 720, "010110": 720,
            "11110": 720, "01111": 720, "11011": 720, "10111": 720, "11101": 720, "001100": 120,
@@ -25,6 +28,14 @@ def evaluate_line(line):
         if key in line:
             score += weights[key]
     return score
+
+
+def evaluate_trace(trace):
+    value, i = 0, 1 if ATTACK else -1
+    for dot in trace:
+        value += i * dot[0]
+        i *= -1
+    return value
 
 
 def symbol(chessboard_color, my_color):
@@ -49,19 +60,20 @@ class AI(object):
         if is_empty(chessboard):
             self.candidate_list.append([7, 7])
         else:
-            self.candidate_list.append(self.evaluate_chessboard(chessboard, self.color))
+            dot = self.evaluate_chessboard(chessboard)
+            self.candidate_list.append((dot[1], dot[2]))
         # ==================================================================
 
-    def evaluate_chessboard(self, chessboard, color):
-        data, x, y = 0, 0, 0
+    def get_dot_list(self, chessboard, color):
+        dot_list = []
         for i in range(self.chessboard_size):
             for j in range(self.chessboard_size):
                 if chessboard[i][j] != COLOR_NONE:
                     continue
                 tmp = self.evaluate_dot(i, j, chessboard, color) + PLAYER_RADIO * self.evaluate_dot(i, j, chessboard, -color)
-                if tmp > data:
-                    data, x, y = tmp, i, j
-        return x, y
+                dot_list.append((tmp, i, j))
+        dot_list.sort(reverse=True)
+        return dot_list[0: min(THINK_BREADTH, len(dot_list))]
 
     def evaluate_dot(self, x, y, chessboard, color):
         chessboard[x][y] = color
@@ -103,3 +115,38 @@ class AI(object):
                 tmp_color = chessboard[x - offset][y + offset]
                 line += symbol(tmp_color, color)
         return evaluate_line(line)
+
+    def evaluate_chessboard(self, chessboard):
+        dot_list = self.get_dot_list(chessboard, self.color)
+        if dot_list[0][0] >= 1440:
+            return dot_list[0]
+        best_val, best_dot = -1e15, dot_list[0]
+        for dot in dot_list:
+            chessboard[dot[1]][dot[2]] = self.color
+            value = self.minmax(chessboard, 2 * THINK_DEPTH, False, -1e15, 1e15, [[dot[1], dot[2]]])
+            chessboard[dot[1]][dot[2]] = COLOR_NONE
+            if value > best_val:
+                best_val, best_dot = value, dot
+        return best_dot
+
+    def minmax(self, chessboard, depth, is_max_player, alpha, beta, trace):
+        if depth == 0:
+            return evaluate_trace(trace)
+        best_val = -1e15 if is_max_player else 1e15
+        color = self.color if is_max_player else -self.color
+        dot_list = self.get_dot_list(chessboard, color)
+        for dot in dot_list:
+            trace.append(dot)
+            chessboard[dot[1]][dot[2]] = color
+            value = self.minmax(chessboard, depth - 1, not is_max_player, alpha, beta, trace)
+            chessboard[dot[1]][dot[2]] = color
+            trace.remove(dot)
+            if (is_max_player and value > best_val) or (not is_max_player and value < best_val):
+                best_val = value
+            if is_max_player:
+                alpha = max(best_val, alpha)
+            else:
+                beta = min(best_val, beta)
+            if beta <= alpha:
+                break
+        return best_val
